@@ -1,0 +1,124 @@
+import { useState } from 'react';
+import { api } from '@/lib/api';
+import { User } from '@/components/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Wallet, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+const Login = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const { token, user } = await api.post<{ token: string; user: User }>('/auth/login', { email, password });
+            api.setToken(token);
+            window.dispatchEvent(new CustomEvent('auth:login', { detail: user }));
+            toast.success('Welcome back!');
+            navigate('/');
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to login');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGuestLogin = async () => {
+        setLoading(true);
+        try {
+            const { token, user } = await api.post<{ token: string; user: User }>('/auth/guest');
+            api.setToken(token);
+            window.dispatchEvent(new CustomEvent('auth:login', { detail: user }));
+            toast.success('Welcome! Signed in as guest.');
+            navigate('/');
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to login as guest');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-background px-4">
+            <Card className="w-full max-w-md shadow-lg border-primary/10">
+                <CardHeader className="space-y-4 text-center">
+                    <div className="flex justify-center">
+                        <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-md">
+                            <Wallet className="w-6 h-6 text-primary-foreground" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <CardTitle className="text-2xl font-bold tracking-tight">Welcome to SplitEase</CardTitle>
+                        <CardDescription>Enter your credentials to manage your expenses</CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="name@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="transition-all focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                className="transition-all focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+                        <Button type="submit" className="w-full font-semibold" disabled={loading}>
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Sign In
+                        </Button>
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background px-2 text-muted-foreground">Or</span>
+                            </div>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            onClick={handleGuestLogin}
+                            disabled={loading}
+                        >
+                            Continue as Guest
+                        </Button>
+                    </form>
+                </CardContent>
+                <CardFooter className="flex flex-col space-y-4 text-center">
+                    <div className="text-sm text-muted-foreground">
+                        Don't have an account?{' '}
+                        <Link to="/signup" className="text-primary hover:underline font-medium">
+                            Create an account
+                        </Link>
+                    </div>
+                </CardFooter>
+            </Card>
+        </div>
+    );
+};
+
+export default Login;
