@@ -1,22 +1,24 @@
 import '../config.js';
 import { MongoClient } from 'mongodb';
 
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/billsplit';
-const client = new MongoClient(uri);
+const uri = process.env.MONGODB_URI;
 
-let db = null;
+if (!global._mongoClientPromise) {
+  const client = new MongoClient(uri, { maxPoolSize: 10 });
+  global._mongoClientPromise = client.connect();
+}
 
 export async function connectMongoDB() {
-  await client.connect();
-  // Uses the database specified in the connection string, fallback to 'billsplit'
-  db = client.db();
+  const client = await global._mongoClientPromise;
   console.log('✅ Connected to MongoDB');
-  return db;
+  return client.db();
 }
 
-export function getDB() {
-  if (!db) throw new Error('MongoDB not connected. Call connectMongoDB() first.');
-  return db;
+export async function getDB() {
+  const client = await global._mongoClientPromise;
+  return client.db();
 }
 
+// We can still export a default for compatibility if needed.
+const client = await global._mongoClientPromise.catch(() => null);
 export default client;

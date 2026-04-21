@@ -30,24 +30,31 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ─── Start server ───
-async function start() {
-  try {
-    // Test MySQL connection
-    const connection = await pool.getConnection();
-    console.log('✅ Connected to MySQL');
-    connection.release();
+// ─── Start server or export for Vercel ───
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  async function start() {
+    try {
+      // Test MySQL connection
+      const connection = await pool.getConnection();
+      console.log('✅ Connected to MySQL');
+      connection.release();
 
-    // Connect to MongoDB
-    await connectMongoDB();
+      // Connect to MongoDB
+      await connectMongoDB();
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
+      app.listen(PORT, () => {
+        console.log(`🚀 Server running on http://localhost:${PORT}`);
+      });
+    } catch (error) {
+      console.error('❌ Failed to start server:', error);
+      process.exit(1);
+    }
   }
+  start();
+} else {
+  // Wait for connections when running in serverless environment (optional, but good for cold starts)
+  // Vercel routes will still handle requests as they come in.
+  connectMongoDB().catch(console.error);
 }
 
-start();
+export default app;

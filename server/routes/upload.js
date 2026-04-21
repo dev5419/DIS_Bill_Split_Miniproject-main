@@ -17,7 +17,7 @@ router.post('/upload', authenticate, upload.single('image'), async (req, res) =>
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const db = getDB();
+    const db = await getDB();
     const result = await db.collection('images').insertOne({
       filename: req.file.originalname,
       contentType: req.file.mimetype,
@@ -45,7 +45,7 @@ router.get('/images/:id', async (req, res) => {
       return res.status(400).json({ message: 'Invalid image ID' });
     }
 
-    const db = getDB();
+    const db = await getDB();
     const image = await db.collection('images').findOne({ _id: objectId });
     if (!image) {
       return res.status(404).json({ message: 'Image not found' });
